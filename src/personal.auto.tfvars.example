@@ -1,3 +1,43 @@
 token  =  ""
 cloud_id  = ""
 folder_id = ""
+bucket = {
+  name = "",
+  size = 104857600,
+  index_document = "index.html",
+  error_document = "error.html"
+}
+image = {
+  key        = "image.jpg",
+  source     = "./files/image.jpg"
+}
+vm_res = {
+  name_group = "instance-group"
+  platform_id = "standard-v3",
+  image_id = "fd827b91d99psvq5fjit",
+  memory = 2,
+  vcpu = 2
+}
+ig-params = {
+  scale_size = 3,
+  deploy_policy_unavailable = 1,
+  deploy_policy_expansion = 0,
+  target_group_name = "target-group"
+}
+network = {
+  name = "network-1"
+}
+subnet = {
+  name = "subnet-1",
+  v4_cidr = [ "192.168.10.0/24" ]
+}
+load_balancer = {
+  name = "lb-1",
+  listener_name = "nlb-listener"
+  listener_port = 80,
+  http_healthcheck_port = 80
+  http_healthcheck_path = "/index.html"
+}
+sa = {
+  name = "netology-sa"
+}

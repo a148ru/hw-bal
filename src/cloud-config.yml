@@ -1,0 +1,26 @@
+#cloud-config
+users:
+  - name: ubuntu
+    groups: sudo
+    shell: /bin/bash
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+package_update: true
+package_upgrade: false
+# packages:
+#  - vim
+#  - nginx
+write_files:
+  - path: "/var/www/html/index.html"
+    permissions: "644"
+    owner: www-data:www-data
+    content: |
+      <html>
+      <head>
+      </head>
+      <body>
+      <p><a href="${link_image}">image</a></p>
+      </body>
+      </html>
+    defer: true

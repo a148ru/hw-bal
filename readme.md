@@ -178,6 +178,7 @@ Apply complete! Resources: 10 added, 0 changed, 0 destroyed.
  - создать статическую страницу в Object Storage и применить сертификат HTTPS;
  - в качестве результата предоставить скриншот на страницу с сертификатом в заголовке (замочек).
 
+ ![alt text](image-5.png)
  ![alt text](image-2.png)
  ![alt text](image-4.png)
  ![alt text](image-3.png)

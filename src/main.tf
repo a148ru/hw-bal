@@ -1,29 +1,29 @@
 
-resource "yandex_storage_bucket" "bucket" {
-  bucket = var.bucket.name
-  folder_id = var.folder_id
-  access_key = yandex_iam_service_account_static_access_key.sa-static-key.access_key
-  secret_key  = yandex_iam_service_account_static_access_key.sa-static-key.secret_key
+# Создаем семетричный ключ шифрования
 
-  website {
-    index_document = var.bucket.index_document
-    error_document = var.bucket.error_document
-  }
-  max_size = var.bucket.size
-
-  anonymous_access_flags {
-    read = true
-    list = true
-  }
-  depends_on = [ yandex_resourcemanager_folder_iam_member.bucket-sa ]
+resource "yandex_kms_symmetric_key" "key-a" {
+  name              = local.key_name
+  description       = local.key_desc
+  default_algorithm = "AES_256"
+  rotation_period   = "168h"
 }
+
 
 # Создание сервисного аккаунта
 
 resource "yandex_iam_service_account" "netology-sa" {
   name = var.sa.name
-  depends_on = [ yandex_vpc_subnet.subnet ]
+ # depends_on = [ yandex_vpc_subnet.subnet ]
 }
+
+
+# Создание статического ключа доступа
+
+resource "yandex_iam_service_account_static_access_key" "sa-static-key" {
+  service_account_id = yandex_iam_service_account.netology-sa.id
+  description        = "static access key"
+}
+
 
 # Назначение ролей сервисному аккаунту
 
@@ -48,12 +48,49 @@ resource "yandex_resourcemanager_folder_iam_member" "load-balancer-editor" {
   depends_on = [ yandex_iam_service_account_static_access_key.sa-static-key ]
 }
 
-# Создание статического ключа доступа
-
-resource "yandex_iam_service_account_static_access_key" "sa-static-key" {
-  service_account_id = yandex_iam_service_account.netology-sa.id
-  description        = "static access key"
+resource "yandex_resourcemanager_folder_iam_member" "editor-role" {
+  folder_id = var.folder_id
+  role      = "editor"
+  member    = "serviceAccount:${yandex_iam_service_account.netology-sa.id}"
 }
+
+resource "yandex_resourcemanager_folder_iam_member" "encrypterDecrypter-role" {
+  folder_id = var.folder_id
+  role      = "kms.keys.encrypterDecrypter"
+  member    = "serviceAccount:${yandex_iam_service_account.netology-sa.id}"
+}
+
+
+# Создаем бакет
+
+resource "yandex_storage_bucket" "bucket" {
+  bucket = var.bucket.name
+  folder_id = var.folder_id
+  access_key = yandex_iam_service_account_static_access_key.sa-static-key.access_key
+  secret_key  = yandex_iam_service_account_static_access_key.sa-static-key.secret_key
+
+  website {
+    index_document = var.bucket.index_document
+    error_document = var.bucket.error_document
+  }
+  max_size = var.bucket.size
+
+  anonymous_access_flags {
+    read = true
+    list = true
+  }
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        kms_master_key_id = yandex_kms_symmetric_key.key-a.id
+        sse_algorithm     = "aws:kms"
+      }
+    }
+  }
+  depends_on = [ yandex_resourcemanager_folder_iam_member.bucket-sa ]
+}
+
 
 # Создание объекта
 
@@ -63,11 +100,14 @@ resource "yandex_storage_object" "test-object" {
   bucket     = var.bucket.name
   key        = var.image.key
   source     = var.image.source
-  depends_on = [ yandex_resourcemanager_folder_iam_member.bucket-sa, yandex_storage_bucket.bucket, yandex_iam_service_account_static_access_key.sa-static-key ]
+  depends_on = [ yandex_resourcemanager_folder_iam_member.bucket-sa, yandex_storage_bucket.bucket, yandex_iam_service_account_static_access_key.sa-static-key, yandex_kms_symmetric_key.key-a ]
 }
 
 
-# Группа ВМ
+###############################
+
+
+/* # Группа ВМ
 resource "yandex_compute_instance_group" "ig-1" {
   name                = var.vm_res.name_group
   folder_id           =  var.folder_id
@@ -156,3 +196,4 @@ resource "yandex_vpc_subnet" "subnet" {
   network_id     = "${yandex_vpc_network.network.id}"
   v4_cidr_blocks = var.subnet.v4_cidr
 }
+ */
